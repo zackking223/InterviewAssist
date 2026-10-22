@@ -1,0 +1,12 @@
+[build]
+# Vulkan's generated shader project has deeply nested paths that exceed the
+# MSVC FileTracker limit under src-tauri/target.
+target-dir = "D:/iat"
+
+[env]
+# whisper-rs builds whisper.cpp through bindgen + CMake. Keeping these paths in
+# the repository makes a freshly opened or already-running PowerShell behave the
+# same after installing LLVM and CMake in their standard Windows locations.
+LIBCLANG_PATH = { value = "C:/Program Files/LLVM/bin", force = false }
+CMAKE = { value = "C:/Program Files/CMake/bin/cmake.exe", force = false }
+VULKAN_SDK = { value = "C:/VulkanSDK/1.4.363.0", force = false }

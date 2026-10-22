@@ -1,0 +1,36 @@
+[package]
+name = "interview-assist"
+version = "0.1.0"
+description = "Private live caption workspace for Windows"
+authors = ["InterviewAssist contributors"]
+edition = "2021"
+
+[lib]
+name = "interview_assist_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+base64 = "0.22"
+cpal = "0.16"
+futures-util = "0.3"
+hex = "0.4"
+jsonwebtoken = "9"
+keyring = { version = "3", features = ["windows-native"] }
+rand = "0.8"
+reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls"], default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-single-instance = "2"
+sha1 = "0.10"
+sha2 = "0.10"
+tokio = { version = "1", features = ["fs", "io-util", "macros", "rt-multi-thread", "sync", "time"] }
+tokio-tungstenite = { version = "0.28", features = ["rustls-tls-native-roots"] }
+url = "2"
+uuid = { version = "1", features = ["v4"] }
+whisper-rs = { version = "0.16", features = ["vulkan"] }
+
