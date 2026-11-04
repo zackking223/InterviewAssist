@@ -59,7 +59,7 @@ import {
 type CaptureState = "stopped" | "listening" | "paused";
 type CaptureSource = "system" | "microphone";
 type Language = "auto" | "en" | "vi";
-type CaptionEngine = "local" | "openai";
+type CaptionEngine = "server" | "local" | "openai";
 type AnswerProvider = "chatgpt" | "openai" | "openrouter" | "google";
 type OpenRouterModel = "google/gemma-4-26b-a4b-it:free" | "openrouter/free";
 type GoogleModel = "gemini-3.8-flash" | "gemini-3.1-flash-lite";
@@ -151,7 +151,8 @@ function App() {
   const [settingsBusy, setSettingsBusy] = useState(false);
   const [chatGptStatus, setChatGptStatus] = useState<ChatGptStatus>({ connected: false, planUsageEnabled: false });
   const [chatGptModels, setChatGptModels] = useState<ChatGptModel[]>([]);
-  const [captionEngine, setCaptionEngine] = useState<CaptionEngine>(() => (localStorage.getItem("ia-caption-engine") as CaptionEngine) || "local");
+  const [captionEngine, setCaptionEngine] = useState<CaptionEngine>(() => (localStorage.getItem("ia-caption-engine") as CaptionEngine) || "server");
+  const [whisperServerUrl, setWhisperServerUrl] = useState(() => localStorage.getItem("ia-whisper-server-url") || "ws://127.0.0.1:8178/v1/realtime");
   const [localModels, setLocalModels] = useState<LocalModelStatus[]>([]);
   const [selectedLocalModel, setSelectedLocalModel] = useState(() => localStorage.getItem("ia-local-model") || "large-v3-turbo-q5");
   const [modelDownload, setModelDownload] = useState<{ modelId: string; percent: number } | null>(null);
@@ -249,7 +250,7 @@ function App() {
   async function toggleCapture() {
     setError("");
     try {
-      if (captureState === "stopped") await startCapture(source, language, captionEngine, selectedLocalModel);
+      if (captureState === "stopped") await startCapture(source, language, captionEngine, selectedLocalModel, whisperServerUrl);
       else if (captureState === "paused") await resumeCapture();
       else await pauseCapture();
     } catch (reason) { setError(String(reason)); }
@@ -310,6 +311,7 @@ function App() {
       localStorage.setItem("ia-model", model);
       localStorage.setItem("ia-system-prompt", systemPrompt);
       localStorage.setItem("ia-caption-engine", captionEngine);
+      localStorage.setItem("ia-whisper-server-url", whisperServerUrl);
       localStorage.setItem("ia-local-model", selectedLocalModel);
       localStorage.setItem("ia-answer-provider", answerProvider);
       localStorage.setItem("ia-openrouter-model", openRouterModel);
@@ -623,6 +625,9 @@ function App() {
           <div className="modal-heading"><div><span className="eyebrow">SETTINGS</span><h2>Caption & AI</h2></div><button className="icon-button" onClick={() => setSettingsOpen(false)}><X size={18} /></button></div>
           <label>1. Live caption engine <small>Controls audio transcription only</small></label>
           <div className="engine-options">
+            <button className={captionEngine === "server" ? "active" : ""} onClick={() => setCaptionEngine("server")}>
+              <strong>Whisper server</strong><span>Local GPU · realtime · port 8178</span>
+            </button>
             <button className={captionEngine === "local" ? "active" : ""} onClick={() => setCaptionEngine("local")}>
               <strong>Local Whisper</strong><span>Offline · audio stays on this PC</span>
             </button>
@@ -630,6 +635,10 @@ function App() {
               <strong>OpenAI</strong><span>Cloud · requires API key</span>
             </button>
           </div>
+          {captionEngine === "server" && <>
+            <label>Whisper server URL <small>Desktop host or LAN IP</small></label>
+            <input value={whisperServerUrl} onChange={(event) => setWhisperServerUrl(event.target.value)} placeholder="ws://192.168.1.20:8178/v1/realtime" autoComplete="off" />
+          </>}
           {captionEngine === "local" && <div className="local-model-list">
             {localModels.map((item) => <div className={`local-model-row ${selectedLocalModel === item.id ? "selected" : ""}`} key={item.id}>
               <label className="model-choice">

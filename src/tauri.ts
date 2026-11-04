@@ -31,7 +31,7 @@ export const signOutChatGpt = () => invoke<void>("chatgpt_sign_out");
 export const getChatGptModels = () => invoke<ChatGptModel[]>("chatgpt_models");
 export const getLocalModelStatus = () => isTauri() ? invoke<LocalModelStatus[]>("local_model_status") : Promise.resolve([]);
 export const downloadLocalModel = (modelId: string) => invoke<LocalModelStatus[]>("download_local_model", { modelId });
-export const startCapture = (source: string, language: string, captionEngine: string, localModel: string) => invoke<void>("start_capture", { source, language, captionEngine, localModel });
+export const startCapture = (source: string, language: string, captionEngine: string, localModel: string, whisperServerUrl: string) => invoke<void>("start_capture", { source, language, captionEngine, localModel, whisperServerUrl });
 export const pauseCapture = () => invoke<void>("pause_capture");
 export const resumeCapture = () => invoke<void>("resume_capture");
 export const stopCapture = () => invoke<void>("stop_capture");

@@ -6,6 +6,7 @@ mod openai;
 mod openrouter;
 mod secret_store;
 mod window_protection;
+mod whisper_server;
 
 use audio::{AudioSession, SourceKind};
 use serde::{Deserialize, Serialize};
@@ -183,6 +184,7 @@ fn start_capture(
     language: String,
     caption_engine: String,
     local_model: String,
+    whisper_server_url: String,
 ) -> Result<(), String> {
     let mut current = state
         .audio
@@ -194,6 +196,14 @@ fn start_capture(
     let (sender, receiver) = tokio::sync::mpsc::unbounded_channel();
     match caption_engine.as_str() {
         "local" => local_whisper::start(app.clone(), language.clone(), local_model, receiver)?,
+        "server" => {
+            tauri::async_runtime::spawn(whisper_server::run_transcription(
+                app.clone(),
+                whisper_server_url,
+                language.clone(),
+                receiver,
+            ));
+        }
         "openai" => {
             let api_key = secret_store::get_api_key()?;
             let languages = match language.as_str() {
