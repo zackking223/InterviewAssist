@@ -59,13 +59,19 @@ pub fn start(
     let config: StreamConfig = supported.into();
     let channels = config.channels as usize;
     let source_rate = config.sample_rate.0;
+    // Consumer microphones often expose a much quieter PCM signal than loopback
+    // system audio. Boost only microphone capture before it reaches server VAD.
+    let gain = match kind {
+        SourceKind::Microphone => 4.0,
+        SourceKind::SystemAudio => 1.0,
+    };
     let error_callback = |_error| {
         // Errors are surfaced by the control path. Never log audio data.
     };
 
     let stream = match sample_format {
         SampleFormat::F32 => {
-            let mut converter = PcmConverter::new(source_rate, channels);
+            let mut converter = PcmConverter::new(source_rate, channels, gain);
             let tx = sender.clone();
             device.build_input_stream(
                 &config,
@@ -84,7 +90,7 @@ pub fn start(
             )
         }
         SampleFormat::I16 => {
-            let mut converter = PcmConverter::new(source_rate, channels);
+            let mut converter = PcmConverter::new(source_rate, channels, gain);
             let tx = sender.clone();
             device.build_input_stream(
                 &config,
@@ -99,7 +105,7 @@ pub fn start(
             )
         }
         SampleFormat::U16 => {
-            let mut converter = PcmConverter::new(source_rate, channels);
+            let mut converter = PcmConverter::new(source_rate, channels, gain);
             let tx = sender.clone();
             device.build_input_stream(
                 &config,
@@ -127,14 +133,16 @@ struct PcmConverter {
     channels: usize,
     step: f64,
     phase: f64,
+    gain: f32,
 }
 
 impl PcmConverter {
-    fn new(source_rate: u32, channels: usize) -> Self {
+    fn new(source_rate: u32, channels: usize, gain: f32) -> Self {
         Self {
             channels: channels.max(1),
             step: source_rate as f64 / 24_000.0,
             phase: 0.0,
+            gain,
         }
     }
 
@@ -156,7 +164,8 @@ impl PcmConverter {
 
         let mut output = Vec::with_capacity((mono.len() as f64 / self.step + 1.0) as usize);
         while self.phase < mono.len() as f64 {
-            output.push(mono[self.phase.floor() as usize]);
+            let sample = mono[self.phase.floor() as usize] as f32 * self.gain;
+            output.push(sample.clamp(i16::MIN as f32, i16::MAX as f32) as i16);
             self.phase += self.step;
         }
         self.phase -= mono.len() as f64;
@@ -170,8 +179,17 @@ mod tests {
 
     #[test]
     fn downmixes_stereo_and_resamples() {
-        let mut converter = PcmConverter::new(48_000, 2);
+        let mut converter = PcmConverter::new(48_000, 2, 1.0);
         let input = vec![1_000, 3_000, 2_000, 4_000, 3_000, 5_000, 4_000, 6_000];
         assert_eq!(converter.convert(input), vec![2_000, 4_000]);
+    }
+
+    #[test]
+    fn applies_gain_and_clamps() {
+        let mut converter = PcmConverter::new(24_000, 1, 4.0);
+        assert_eq!(
+            converter.convert([1_000, 10_000, -10_000]),
+            vec![4_000, 32_767, -32_768]
+        );
     }
 }
