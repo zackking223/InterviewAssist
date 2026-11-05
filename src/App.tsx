@@ -127,6 +127,7 @@ function App() {
   const lastFinalCaption = useRef({ text: "", at: 0 });
   const nextMessageId = useRef(1);
   const answerScrollRef = useRef<HTMLDivElement>(null);
+  const answerAutoScroll = useRef(true);
   const [captureState, setCaptureState] = useState<CaptureState>("stopped");
   const [source, setSource] = useState<CaptureSource>("system");
   const [language, setLanguage] = useState<Language>("auto");
@@ -230,7 +231,7 @@ function App() {
 
   useEffect(() => {
     const container = answerScrollRef.current;
-    if (container) container.scrollTop = container.scrollHeight;
+    if (container && answerAutoScroll.current) container.scrollTop = container.scrollHeight;
   }, [chatHistory, answering]);
 
   useEffect(() => {
@@ -288,6 +289,7 @@ function App() {
       content: "",
       label: answerModelLabel(answerProvider, openRouterModel, googleModel, model),
     };
+    answerAutoScroll.current = true;
     setChatHistory((current) => [...current, userMessage, assistantMessage]);
     setAnswering(true);
     setTranscript((current) => current.trim() === question ? "" : current);
@@ -298,6 +300,12 @@ function App() {
       setError(String(reason));
       setChatHistory((current) => current.filter((message) => message.id !== assistantMessage.id));
     }
+  }
+
+  function handleAnswerScroll(event: React.UIEvent<HTMLDivElement>) {
+    const container = event.currentTarget;
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    answerAutoScroll.current = distanceFromBottom <= 32;
   }
 
   const latestAnswer = [...chatHistory].reverse().find((message) => message.role === "assistant" && message.content)?.content || "";
@@ -594,14 +602,19 @@ function App() {
                 {copied === "answer" ? <Check size={15} /> : <Copy size={15} />}
                 {copied === "answer" ? "Copied" : "Copy latest"}
               </button>
-              <button className="answer-copy" onClick={() => setChatHistory([])} disabled={!chatHistory.length || answering} title="Clear chat history">
+              <button className="answer-copy" onClick={() => { answerAutoScroll.current = true; setChatHistory([]); }} disabled={!chatHistory.length || answering} title="Clear chat history">
                 <Trash2 size={15} /> Clear
               </button>
               {answering && <button className="answer-copy" onClick={() => void cancelResponse()}>Cancel</button>}
             </div>
           </div>
 
-          <div ref={answerScrollRef} className={`answer-content ${chatHistory.length ? "has-content" : ""}`}>
+          <div
+            ref={answerScrollRef}
+            className={`answer-content ${chatHistory.length ? "has-content" : ""}`}
+            onScroll={handleAnswerScroll}
+            onWheel={(event) => { if (event.deltaY < 0) answerAutoScroll.current = false; }}
+          >
             {chatHistory.length ? chatHistory.map((message) => (
               <div className={`chat-message ${message.role}`} key={message.id}>
                 <span>{message.role === "user" ? "You" : message.label || answerModelLabel(answerProvider, openRouterModel, googleModel, model)}</span>

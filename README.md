@@ -27,7 +27,7 @@ InterviewAssist là ứng dụng desktop Windows hỗ trợ live caption và g�
 ## Current build
 
 - Native application: `D:\iat\release\interview-assist.exe`
-- Windows x64 installer: `D:\iat\release\bundle\nsis\InterviewAssist_0.1.1_x64-setup.exe`
+- Windows x64 installer: `D:\iat\release\bundle\nsis\InterviewAssist_0.1.2_x64-setup.exe`
 - The development build is unsigned.
 
 ## Build và chạy
@@ -138,7 +138,7 @@ npm run tauri build
 Artifacts:
 
 - Executable: `D:\iat\release\interview-assist.exe`
-- NSIS installer: `D:\iat\release\bundle\nsis\InterviewAssist_0.1.1_x64-setup.exe`
+- NSIS installer: `D:\iat\release\bundle\nsis\InterviewAssist_0.1.2_x64-setup.exe`
 
 ### 7. Chạy bản release không qua installer
 
