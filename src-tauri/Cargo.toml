@@ -1,6 +1,6 @@
 [package]
 name = "interview-assist"
-version = "0.1.0"
+version = "0.1.1"
 description = "Private live caption workspace for Windows"
 authors = ["InterviewAssist contributors"]
 edition = "2021"
